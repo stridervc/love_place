@@ -49,21 +49,21 @@ function love.load()
 	updates = 1000
 	lines_read = 0
 	lines_update = 0
+	total_lines = 16556641
 end
 
 function love.update(dt)
-	hud_line_1 = "status: "..(fh and "working" or "done").." | progress: "..math.floor(100*lines_read/16559898).."%"
+	hud_line_1 = "status: "..(fh and "working" or "done").." | progress: "..math.floor(100*lines_read/total_lines).."%"
 	hud_line_2 = "pixels per second: "..comma_value(math.floor((lines_read-lines_update)/dt))
 	lines_update = lines_read
-	if fh then
+	if io.type(fh) == "file" then
 		for i = 0,updates do
 			-- read next line
 			local line = fh:read()
 			-- handling the end of the file
 			if (line == nil) or (line == "ts,user,x_coordinate,y_coordinate,color") then
 				fh:close()
-				print("eof reached")
-				return
+				do return end
 			end
 			-- split the line into variables
 			local ts,user,x,y,c = line:match("(.+),(.+),(.+),(.+),(.+)")
@@ -110,7 +110,9 @@ function love.draw()
 end
 
 function love.quit()
-	fh:close()
+	if io.type(fh) == "file" then
+		fh:close()
+	end
 end
 
 -- takes x,y coordinates and /r/place colour value and adds them to the canvas
@@ -158,7 +160,8 @@ function love.run()
  
 		-- Call update and draw
 		if love.update then love.update(dt) end -- will pass 0 if love.timer is disabled
- 
+		
+		-- only draw every 5 updates to increase performance
 		if ticks == 4 then
 			if love.graphics and love.graphics.isActive() then
 				love.graphics.clear(love.graphics.getBackgroundColor())
@@ -170,7 +173,9 @@ function love.run()
 		end
  
 		ticks = ticks + 1
-		--if love.timer then love.timer.sleep(0.001) end
+		if love.timer and (io.type(fh) == "closed file") then
+			love.timer.sleep(0.001)
+		end
 	end
  
 end
