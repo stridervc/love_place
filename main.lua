@@ -53,7 +53,8 @@ end
 
 function love.update(dt)
 	hud_line_1 = "status: "..(fh and "working" or "done").." | progress: "..math.floor(100*lines_read/16559898).."%"
-	hud_line_2 = "pixels per second: "..comma_value(math.floor(updates/dt))
+	hud_line_2 = "pixels per second: "..comma_value(math.floor((lines_read-lines_update)/dt))
+	lines_update = lines_read
 	if fh then
 		for i = 0,updates do
 			-- read next line
@@ -119,5 +120,58 @@ function putPixel(x, y, c)
 	love.graphics.setColor(rgb_red[c], rgb_green[c], rgb_blue[c], 255)
 	love.graphics.points(x, y)
 	love.graphics.setCanvas()
+end
+
+function love.run()
+ 
+	if love.math then
+		love.math.setRandomSeed(os.time())
+	end
+ 
+	if love.load then love.load(arg) end
+ 
+	-- We don't want the first frame's dt to include time taken by love.load.
+	if love.timer then love.timer.step() end
+ 
+	local dt = 0
+	local ticks = 0
+	-- Main loop time.
+	while true do
+		-- Process events.
+		if love.event then
+			love.event.pump()
+			for name, a,b,c,d,e,f in love.event.poll() do
+				if name == "quit" then
+					if not love.quit or not love.quit() then
+						return a
+					end
+				end
+				love.handlers[name](a,b,c,d,e,f)
+			end
+		end
+ 
+		-- Update dt, as we'll be passing it to update
+		if love.timer then
+			love.timer.step()
+			dt = love.timer.getDelta()
+		end
+ 
+		-- Call update and draw
+		if love.update then love.update(dt) end -- will pass 0 if love.timer is disabled
+ 
+		if ticks == 4 then
+			if love.graphics and love.graphics.isActive() then
+				love.graphics.clear(love.graphics.getBackgroundColor())
+				love.graphics.origin()
+				if love.draw then love.draw() end
+				love.graphics.present()
+				ticks = 0
+			end
+		end
+ 
+		ticks = ticks + 1
+		--if love.timer then love.timer.sleep(0.001) end
+	end
+ 
 end
 
